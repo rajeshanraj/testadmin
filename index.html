@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Freshtime Enterprises | Admin Control Console</title>
+  
+  <meta name="theme-color" content="#0f172a" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase App & Realtime Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    .brand-gradient {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="brand-gradient text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-500 text-slate-900 font-bold flex items-center justify-center text-sm shadow">
+          FT
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold tracking-tight text-white leading-tight">
+            Freshtime Admin Console
+          </h1>
+          <span class="text-[10px] text-blue-200">Grievance Management Desk • admin.fte.co.in</span>
+        </div>
+      </div>
+      <a href="https://fte.co.in" target="_blank" class="text-xs bg-slate-800/80 hover:bg-slate-800 text-blue-200 hover:text-white px-3 py-1.5 rounded-lg border border-blue-400/30 transition flex items-center gap-1">
+        <span>Public Portal</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto w-full px-4 py-8 flex-1">
+
+    <!-- 1. Admin Login View -->
+    <div id="adminLoginBox" class="max-w-md mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 space-y-5 my-12">
+      <div class="text-center">
+        <div class="w-12 h-12 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center mx-auto mb-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900">Administrator Sign In</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Authorized Personnel Only</p>
+      </div>
+
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Username</label>
+          <input type="text" id="adminUsername" required placeholder="admin" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+          <input type="password" id="adminPassword" required placeholder="••••••••" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+
+        <div id="adminLoginError" class="text-xs text-red-600 hidden font-medium text-center"></div>
+
+        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg text-sm shadow cursor-pointer">
+          Sign In to Console
+        </button>
+      </form>
+    </div>
+
+    <!-- 2. Admin Dashboard View -->
+    <div id="adminDashboardBox" class="hidden space-y-6">
+      
+      <!-- Top Action Toolbar -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-xl md:text-2xl font-bold text-slate-900">Grievance Control Center</h2>
+          <p class="text-xs text-slate-500">Live ticket management connected to Firebase & Google Sheets.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Convert Hash Toggle -->
+          <button type="button" id="toggleHashBtn" onclick="toggleCredentialDecryption()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            <span id="hashToggleText">Convert Hash to Real Data</span>
+          </button>
+
+          <button type="button" onclick="loadUnifiedRecords()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center gap-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Refresh
+          </button>
+
+          <button type="button" onclick="exportToCSV()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center gap-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Export CSV
+          </button>
+
+          <button type="button" onclick="handleAdminLogout()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition cursor-pointer">
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+        <button type="button" onclick="switchAdminCategory('pending')" id="tab-btn-pending" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow">
+          <span>Tickets to Solve (Pending)</span>
+          <span id="badge-count-pending" class="bg-white/20 px-2 py-0.5 rounded-full text-[11px]">0</span>
+        </button>
+        <button type="button" onclick="switchAdminCategory('completed')" id="tab-btn-completed" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-200 text-slate-700 hover:bg-slate-300">
+          <span>Completed Tickets</span>
+          <span id="badge-count-completed" class="bg-slate-300 px-2 py-0.5 rounded-full text-[11px]">0</span>
+        </button>
+        <button type="button" onclick="switchAdminCategory('rejected')" id="tab-btn-rejected" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-200 text-slate-700 hover:bg-slate-300">
+          <span>Rejected Tickets</span>
+          <span id="badge-count-rejected" class="bg-slate-300 px-2 py-0.5 rounded-full text-[11px]">0</span>
+        </button>
+        <button type="button" onclick="switchAdminCategory('all')" id="tab-btn-all" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-200 text-slate-700 hover:bg-slate-300">
+          <span>All Tickets</span>
+          <span id="badge-count-all" class="bg-slate-300 px-2 py-0.5 rounded-full text-[11px]">0</span>
+        </button>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <span class="text-xs text-slate-500 font-semibold">Total Unique</span>
+          <div id="statTotalTickets" class="text-2xl font-black text-slate-900 mt-1">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/40">
+          <span class="text-xs text-blue-800 font-semibold">Active to Solve</span>
+          <div id="statToSolveCount" class="text-2xl font-black text-blue-700 mt-1">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/40">
+          <span class="text-xs text-emerald-800 font-semibold">Completed</span>
+          <div id="statCompletedCount" class="text-2xl font-black text-emerald-700 mt-1">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-rose-200 bg-rose-50/40">
+          <span class="text-xs text-rose-800 font-semibold">Rejected</span>
+          <div id="statRejectedCount" class="text-2xl font-black text-rose-700 mt-1">0</div>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <input 
+        type="text" 
+        id="tableSearchInput" 
+        onkeyup="filterSheetTable()" 
+        placeholder="Filter records by Ticket ID, Full Name, Login ID, UTR, or Mobile..." 
+        class="w-full border border-slate-300 rounded-xl p-2.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      />
+
+      <!-- Records Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto max-h-[600px]">
+          <table class="w-full text-left text-xs text-slate-700">
+            <thead class="bg-slate-100 uppercase font-semibold text-slate-600 sticky top-0 border-b border-slate-200">
+              <tr>
+                <th class="p-3">Status</th>
+                <th class="p-3">Ticket ID</th>
+                <th class="p-3">Applicant Name</th>
+                <th class="p-3">Classification</th>
+                <th class="p-3">Issue Category</th>
+                <th class="p-3 text-center">Full Details</th>
+              </tr>
+            </thead>
+            <tbody id="sheetTableBody" class="divide-y divide-slate-200">
+              <tr>
+                <td colspan="6" class="p-6 text-center text-slate-400">Loading records...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: TICKET FULL DETAILS -->
+  <div id="fullDetailsModal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 border border-slate-200 overflow-y-auto max-h-[90vh]">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Ticket Full Details</h3>
+          <span id="modalTicketId" class="text-xs font-mono font-bold text-blue-600"></span>
+        </div>
+        <button type="button" onclick="closeFullDetailsModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <div id="modalDetailsBody" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"></div>
+      <div id="modalActionsFooter" class="pt-4 border-t flex flex-wrap items-center justify-between gap-2"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: UPDATE STATUS -->
+  <div id="editStatusModal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="text-base font-bold text-slate-900">Update Ticket Status & Remarks</h3>
+        <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <input type="hidden" id="editKey" />
+      <input type="hidden" id="editRowId" />
+      <input type="hidden" id="editTicketRaw" />
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Ticket Reference</label>
+        <input type="text" id="editTicketDisplay" disabled class="w-full border rounded-lg p-2 bg-slate-100 text-xs font-mono font-bold text-blue-700" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Status Classification *</label>
+        <select id="editStatusSelect" class="w-full border rounded-lg p-2 text-xs bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <option value="Payment Pending / Unpaid">Payment Pending / Unpaid</option>
+          <option value="Payment Verification Pending">Payment Verification Pending</option>
+          <option value="Payment Verified - In Progress">Payment Verified - In Progress</option>
+          <option value="In Review / Contacting Nodal Officer">In Review / Contacting Nodal Officer</option>
+          <option value="Credentials Dispatched to Mobile">Credentials Dispatched to Mobile</option>
+          <option value="Complete / Resolved">Complete / Resolved</option>
+          <option value="Rejected / Invalid UTR or Screenshot">Rejected / Invalid UTR or Screenshot</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Technician Remarks</label>
+        <textarea id="editRemarksInput" rows="3" placeholder="Enter resolution notes, credentials, or remarks..." class="w-full border rounded-lg p-2 text-xs bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="closeEditModal()" class="w-1/2 py-2 border rounded-lg text-xs font-semibold">Cancel</button>
+        <button type="button" onclick="submitStatusUpdate()" id="saveStatusBtn" class="w-1/2 bg-blue-600 text-white rounded-lg text-xs font-semibold shadow">Save Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW PROOF SCREENSHOT -->
+  <div id="imageProofModal" class="fixed inset-0 bg-black/80 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 shadow-2xl space-y-3">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h4 class="text-sm font-bold text-slate-900" id="proofTicketIdDisplay">Payment Screenshot Proof</h4>
+        <button type="button" onclick="closeImageModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <div class="overflow-auto max-h-[70vh] flex justify-center bg-slate-100 rounded-lg p-2 border border-slate-200">
+        <img id="imageProofDisplay" src="" alt="Payment Proof" class="max-w-full rounded shadow" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 text-center">
+    <p>Freshtime Enterprises • Admin Portal • &copy; 2026</p>
+  </footer>
+
+  <script>
+    const GOOGLE_SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbz4yowS5r7KcuCv3rCAqSQr6Wz6E83AJwXQ2VpLG8LEmuH_aGJUSFyymU-893xcBrKR/exec";
+    const FRESHTIME_CIPHER_SECRET = "Freshtime@SecureKey2026";
+
+    function decodeFromHash(hash) {
+      if (!hash || typeof hash !== "string") return "";
+      if (!hash.startsWith("ENC:")) return hash;
+      const rawHex = hash.substring(4);
+      let result = "";
+      try {
+        for (let i = 0; i < rawHex.length; i += 2) {
+          let code = parseInt(rawHex.substr(i, 2), 16);
+          let charCode = code ^ FRESHTIME_CIPHER_SECRET.charCodeAt((i / 2) % FRESHTIME_CIPHER_SECRET.length);
+          result += String.fromCharCode(charCode);
+        }
+        return result;
+      } catch (err) {
+        return hash;
+      }
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDv4svyqS7hNhJ8B9-8uOhQZE_Nczuu35s",
+      authDomain: "freshtime-enterprises.firebaseapp.com",
+      databaseURL: "https://freshtime-enterprises-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "freshtime-enterprises",
+      storageBucket: "freshtime-enterprises.firebasestorage.app",
+      messagingSenderId: "929876451772",
+      appId: "1:929876451772:web:b268e8e34f564772020bb9"
+    };
+
+    let db = null;
+    let ticketsRef = null;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      ticketsRef = db.ref("uucms_tickets");
+    } catch(err) {
+      console.warn(err);
+    }
+
+    let globalUnifiedRecords = [];
+    let areCredentialsDecrypted = false;
+    let currentAdminTab = "pending";
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (sessionStorage.getItem("freshtime_admin_auth") === "true") {
+        document.getElementById("adminLoginBox").classList.add("hidden");
+        document.getElementById("adminDashboardBox").classList.remove("hidden");
+        loadUnifiedRecords();
+      }
+    });
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('adminUsername').value.trim();
+      const p = document.getElementById('adminPassword').value.trim();
+      const errBox = document.getElementById('adminLoginError');
+
+      if (u === "admin" && p === "Freshtime@2026") {
+        sessionStorage.setItem("freshtime_admin_auth", "true");
+        errBox.classList.add('hidden');
+        document.getElementById('adminLoginBox').classList.add('hidden');
+        document.getElementById('adminDashboardBox').classList.remove('hidden');
+        loadUnifiedRecords();
+      } else {
+        errBox.innerText = "Invalid credentials.";
+        errBox.classList.remove('hidden');
+      }
+    }
+
+    function handleAdminLogout() {
+      sessionStorage.removeItem("freshtime_admin_auth");
+      document.getElementById('adminDashboardBox').classList.add('hidden');
+      document.getElementById('adminLoginBox').classList.remove('hidden');
+    }
+
+    function toggleCredentialDecryption() {
+      areCredentialsDecrypted = !areCredentialsDecrypted;
+      const btnText = document.getElementById('hashToggleText');
+      btnText.innerText = areCredentialsDecrypted ? "Hide Real Data (Show Hash)" : "Convert Hash to Real Data";
+      renderUnifiedTable(getFilteredCategoryRecords());
+    }
+
+    function switchAdminCategory(tabName) {
+      currentAdminTab = tabName;
+      ['pending', 'completed', 'rejected', 'all'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-blue-600 text-white shadow";
+        } else {
+          btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-200 text-slate-700 hover:bg-slate-300";
+        }
+      });
+      renderUnifiedTable(getFilteredCategoryRecords());
+    }
+
+    function getFilteredCategoryRecords() {
+      if (currentAdminTab === "completed") {
+        return globalUnifiedRecords.filter(r => (r.status || "").toLowerCase().includes("complete") || (r.status || "").toLowerCase().includes("resolved"));
+      }
+      if (currentAdminTab === "rejected") {
+        return globalUnifiedRecords.filter(r => (r.status || "").toLowerCase().includes("reject") || (r.status || "").toLowerCase().includes("invalid"));
+      }
+      if (currentAdminTab === "pending") {
+        return globalUnifiedRecords.filter(r => {
+          const s = (r.status || "").toLowerCase();
+          return !s.includes("complete") && !s.includes("resolved") && !s.includes("reject") && !s.includes("invalid");
+        });
+      }
+      return globalUnifiedRecords;
+    }
+
+    async function loadUnifiedRecords() {
+      const tbody = document.getElementById('sheetTableBody');
+      tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Loading records...</td></tr>`;
+
+      const recordMap = new Map();
+
+      // 1. Google Sheets Fetch
+      const sheetPromise = fetch(`${GOOGLE_SHEET_WEBHOOK_URL}?action=fetch_all_records&user=admin&pass=Freshtime@2026`)
+        .then(res => res.json())
+        .then(result => {
+          if (result && result.records && Array.isArray(result.records)) {
+            result.records.forEach((r, idx) => {
+              const tid = String(r.ticketId || ("ROW-" + idx)).trim();
+              recordMap.set(tid, {
+                ...r,
+                rowId: r.rowId || (idx + 2),
+                screenshotProof: String(r.screenshotProof || "").trim()
+              });
+            });
+          }
+        }).catch(err => console.warn(err));
+
+      // 2. Firebase Fetch
+      let firebasePromise = Promise.resolve();
+      if (ticketsRef) {
+        firebasePromise = ticketsRef.once("value").then(snap => {
+          const data = snap.val();
+          if (data) {
+            Object.keys(data).forEach(key => {
+              const r = data[key];
+              const tid = String(r.ticketId || key).trim();
+              const fbProof = String(r.screenshotProof || "").trim();
+
+              if (recordMap.has(tid)) {
+                const existing = recordMap.get(tid);
+                const validProof = (fbProof && fbProof.length > 10) ? fbProof : existing.screenshotProof;
+                recordMap.set(tid, { ...existing, ...r, fbKey: key, screenshotProof: validProof });
+              } else {
+                recordMap.set(tid, { ...r, fbKey: key, screenshotProof: fbProof });
+              }
+            });
+          }
+        }).catch(err => console.warn(err));
+      }
+
+      await Promise.allSettled([sheetPromise, firebasePromise]);
+      globalUnifiedRecords = Array.from(recordMap.values()).reverse();
+      updateAdminCountsAndBadges();
+      renderUnifiedTable(getFilteredCategoryRecords());
+    }
+
+    function updateAdminCountsAndBadges() {
+      const total = globalUnifiedRecords.length;
+      const completed = globalUnifiedRecords.filter(r => (r.status || "").toLowerCase().includes("complete") || (r.status || "").toLowerCase().includes("resolved")).length;
+      const rejected = globalUnifiedRecords.filter(r => (r.status || "").toLowerCase().includes("reject") || (r.status || "").toLowerCase().includes("invalid")).length;
+      const pending = total - completed - rejected;
+
+      document.getElementById('statTotalTickets').innerText = total;
+      document.getElementById('statToSolveCount').innerText = pending;
+      document.getElementById('statCompletedCount').innerText = completed;
+      document.getElementById('statRejectedCount').innerText = rejected;
+
+      document.getElementById('badge-count-pending').innerText = pending;
+      document.getElementById('badge-count-completed').innerText = completed;
+      document.getElementById('badge-count-rejected').innerText = rejected;
+      document.getElementById('badge-count-all').innerText = total;
+    }
+
+    function renderUnifiedTable(records) {
+      const tbody = document.getElementById('sheetTableBody');
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">No records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map(r => {
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">${r.status}</span></td>
+            <td class="p-3 font-mono font-bold text-slate-900 whitespace-nowrap">${r.ticketId}</td>
+            <td class="p-3 font-bold text-slate-800 whitespace-nowrap">${r.applicantName || 'N/A'}</td>
+            <td class="p-3 whitespace-nowrap"><span class="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-semibold text-slate-700">${r.category || 'N/A'}</span></td>
+            <td class="p-3 text-blue-700 font-medium whitespace-nowrap">${r.issue || 'N/A'}</td>
+            <td class="p-3 text-center whitespace-nowrap">
+              <button type="button" onclick="openFullDetailsModal('${r.ticketId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-bold shadow transition cursor-pointer">
+                View
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function openFullDetailsModal(ticketId) {
+      const rec = globalUnifiedRecords.find(x => x.ticketId === ticketId);
+      if (!rec) return;
+
+      document.getElementById('modalTicketId').innerText = `Reference: ${rec.ticketId}`;
+
+      const rawPass = rec.portalPassword || "";
+      const rawOtp = rec.otp || "";
+      const passDisplay = areCredentialsDecrypted ? decodeFromHash(rawPass) : rawPass;
+      const otpDisplay = areCredentialsDecrypted ? decodeFromHash(rawOtp) : rawOtp;
+
+      let proofUrl = String(rec.screenshotProof || "").trim();
+      let proofContent = '<span class="text-slate-400 italic">No proof uploaded</span>';
+      if (proofUrl && (proofUrl.startsWith("http") || proofUrl.startsWith("data:image"))) {
+        proofContent = `
+          <button type="button" onclick="viewScreenshotProof('${rec.ticketId}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow hover:bg-indigo-700 cursor-pointer">
+            View Payment Screenshot
+          </button>
+        `;
+      }
+
+      document.getElementById('modalDetailsBody').innerHTML = `
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Status:</strong> ${rec.status}</div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Applicant:</strong> ${rec.applicantName || 'N/A'}</div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Classification:</strong> ${rec.category}</div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Institution:</strong> ${rec.institution}</div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Issue:</strong> ${rec.issue}</div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Fee:</strong> ₹${rec.amount}</div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>UTR Number:</strong> <span class="font-mono font-bold text-emerald-800">${rec.utrNumber || 'N/A'}</span></div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Payment Proof:</strong><div class="mt-1">${proofContent}</div></div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Login ID:</strong> <span class="font-mono font-bold select-all">${rec.loginId}</span></div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Password:</strong> <span class="font-mono font-bold select-all">${passDisplay}</span></div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>OTP:</strong> <span class="font-mono font-bold select-all">${otpDisplay}</span></div>
+        <div class="bg-slate-50 p-3 rounded-xl border"><strong>Contact:</strong> ${rec.contactNumber}</div>
+        <div class="md:col-span-2 bg-slate-50 p-3 rounded-xl border"><strong>Error Description:</strong> ${rec.description || 'None'}</div>
+        <div class="md:col-span-2 bg-slate-50 p-3 rounded-xl border"><strong>Remarks:</strong> ${rec.remarks || 'None'}</div>
+      `;
+
+      const cleanPhone = String(rec.contactNumber || "").replace(/[^0-9]/g, "");
+      const adminWaUrl = cleanPhone.length === 10 ? `https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(rec.applicantName || '')},%20regarding%20ticket%20${rec.ticketId}:` : '#';
+
+      document.getElementById('modalActionsFooter').innerHTML = `
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeFullDetailsModal(); openEditModal('${rec.fbKey || ''}', ${rec.rowId || 0}, '${rec.ticketId}', '${encodeURIComponent(rec.status || '')}', '${encodeURIComponent(rec.remarks || '')}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow">
+            Update Status
+          </button>
+          ${cleanPhone.length === 10 ? `<a href="${adminWaUrl}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow inline-block">WhatsApp Candidate</a>` : ''}
+        </div>
+        <button type="button" onclick="closeFullDetailsModal()" class="bg-slate-800 text-white font-semibold px-5 py-2 rounded-lg text-xs">
+          Close
+        </button>
+      `;
+
+      document.getElementById('fullDetailsModal').classList.remove('hidden');
+    }
+
+    function closeFullDetailsModal() {
+      document.getElementById('fullDetailsModal').classList.add('hidden');
+    }
+
+    function viewScreenshotProof(ticketId) {
+      const rec = globalUnifiedRecords.find(x => x.ticketId === ticketId);
+      const proofUrl = rec ? rec.screenshotProof : "";
+      if (proofUrl) {
+        document.getElementById('proofTicketIdDisplay').innerText = `Ticket: ${ticketId} • UTR: ${rec.utrNumber || ''}`;
+        document.getElementById('imageProofDisplay').src = proofUrl;
+        document.getElementById('imageProofModal').classList.remove('hidden');
+      }
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageProofModal').classList.add('hidden');
+    }
+
+    function openEditModal(fbKey, rowId, ticketId, encStatus, encRemarks) {
+      document.getElementById('editKey').value = fbKey;
+      document.getElementById('editRowId').value = rowId;
+      document.getElementById('editTicketRaw').value = ticketId;
+      document.getElementById('editTicketDisplay').value = ticketId;
+      document.getElementById('editStatusSelect').value = decodeURIComponent(encStatus);
+      document.getElementById('editRemarksInput').value = decodeURIComponent(encRemarks);
+      document.getElementById('editStatusModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editStatusModal').classList.add('hidden');
+    }
+
+    async function submitStatusUpdate() {
+      const fbKey = document.getElementById('editKey').value;
+      const rowId = document.getElementById('editRowId').value;
+      const ticketId = document.getElementById('editTicketRaw').value;
+      const status = document.getElementById('editStatusSelect').value;
+      const remarks = document.getElementById('editRemarksInput').value;
+      const btn = document.getElementById('saveStatusBtn');
+
+      btn.disabled = true;
+      btn.innerText = "Syncing...";
+
+      if (ticketsRef) {
+        try {
+          if (fbKey) {
+            await db.ref("uucms_tickets/" + fbKey).update({ status, remarks });
+          } else {
+            const snap = await ticketsRef.orderByChild("ticketId").equalTo(ticketId).once("value");
+            if (snap.val()) {
+              const k = Object.keys(snap.val())[0];
+              await db.ref("uucms_tickets/" + k).update({ status, remarks });
+            }
+          }
+        } catch(e) {}
+      }
+
+      try {
+        await fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "update_ticket_status", ticketId, rowId, status, remarks })
+        });
+      } catch(e) {}
+
+      closeEditModal();
+      btn.disabled = false;
+      btn.innerText = "Save Update";
+      loadUnifiedRecords();
+    }
+
+    function filterSheetTable() {
+      const q = document.getElementById('tableSearchInput').value.toLowerCase();
+      const filtered = getFilteredCategoryRecords().filter(r => 
+        (r.ticketId || "").toLowerCase().includes(q) ||
+        (r.applicantName || "").toLowerCase().includes(q) ||
+        (r.utrNumber || "").toLowerCase().includes(q) ||
+        (r.loginId || "").toLowerCase().includes(q) ||
+        (r.contactNumber || "").toLowerCase().includes(q)
+      );
+      renderUnifiedTable(filtered);
+    }
+
+    function exportToCSV() {
+      const records = getFilteredCategoryRecords();
+      if (!records || records.length === 0) return alert("No records to export.");
+      const headers = ["Ticket ID", "Applicant", "Category", "UTR", "Fee", "Institution", "Issue", "Login ID", "Decrypted Password", "Contact", "Status", "Remarks", "Timestamp"];
+      const rows = records.map(r => [
+        `"${r.ticketId}"`, `"${r.applicantName || ''}"`, `"${r.category}"`, `"${r.utrNumber || ''}"`, `"${r.amount}"`, `"${r.institution}"`,
+        `"${r.issue}"`, `"${r.loginId}"`, `"${decodeFromHash(r.portalPassword)}"`, `"${r.contactNumber}"`, `"${r.status}"`, `"${(r.remarks || '').replace(/"/g, '""')}"`, `"${r.timestamp}"`
+      ]);
+      const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csv));
+      link.setAttribute("download", `Freshtime_Tickets_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
